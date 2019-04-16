@@ -58,8 +58,7 @@ ratings = ratings[ratings.rating >= 0]
 round(ratings.describe(), 2)
 
 # animeとratingsの2つのデータフレームをマージさせる
-# ToDo: Pandas merge()について
-mergeddf = ratings.merge(anime, left_on='anime_id', right_on='anime_id', suffixes=['_user', ''])
+mergeddf = ratings.merge(anime, on='anime_id', suffixes=['_user', '_average'])
 mergeddf.head()
 
 # mergeddfの基本統計量確認
@@ -68,14 +67,15 @@ round(mergeddf.describe(), 2)
 # 不必要な項目と重複項目を削除
 mergeddf = mergeddf[['user_id', 'name', 'rating_user']]
 mergeddf = mergeddf.drop_duplicates(['user_id', 'name'])
-mergeddf.head()
+mergeddf.info()
+mergeddf.head(10)
 
 # データフレームのピボット
 anime_pivot = mergeddf.pivot(index='name', columns='user_id', values='rating_user').fillna(0)
 anime_pivot_sparse = csr_matrix(anime_pivot.values)
 
 # anime_pivotの最初の10行を表示
-anime_pivot.head()
+anime_pivot.head(20)
 
 # ここまででデータの前処理終了。ここからk近傍法を使用してレコメンド機能を作成していく
 
