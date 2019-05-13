@@ -146,7 +146,8 @@ PassengerId = np.array(test['PassengerId']).astype(int)
 my_solution_tree_two = pd.DataFrame(my_prediction_tree_two, PassengerId, columns = ['Survived'])
 my_solution_tree_two.to_csv('csv/my_tree_two.csv', index_label = ['PassengerId'])
 
+# 回答csvの確認
+my_solution_csv = pd.read_csv('csv/my_tree_two.csv')
 
-
-
+my_solution_csv.head(20)
 
