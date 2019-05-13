@@ -122,11 +122,29 @@ my_solution = pd.DataFrame(my_prediction, PassengerId, columns = ['Survived'])
 # my_tree_one.csvとして書き出し
 my_solution.to_csv('csv/my_tree_one.csv', index_label = ['PassengerId'])
 
+# ここでver1の実装完了
 
+# 追加項目も含めて予測モデルで使用する値を取得
+features_two = train[['Pclass', 'Age', 'Sex', 'Fare', 'SibSp', 'Parch', 'Embarked']].values
 
+# 決定木の作成とアーギュメントの設定
+max_depth = 10
+min_samples_split = 5
+my_tree_two = tree.DecisionTreeClassifier(
+        max_depth = max_depth, 
+        min_samples_split = min_samples_split, 
+        random_state = 1
+)
+my_tree_two = my_tree_two.fit(features_two, target)
 
+# testからver2で使う項目を取り出す
+test_features_2 = test[['Pclass', 'Age', 'Sex', 'Fare', 'SibSp', 'Parch', 'Embarked']].values
 
-
+# ver2の決定木を使って予測結果csvに書き出す
+my_prediction_tree_two = my_tree_two.predict(test_features_2)
+PassengerId = np.array(test['PassengerId']).astype(int)
+my_solution_tree_two = pd.DataFrame(my_prediction_tree_two, PassengerId, columns = ['Survived'])
+my_solution_tree_two.to_csv('csv/my_tree_two.csv', index_label = ['PassengerId'])
 
 
 
