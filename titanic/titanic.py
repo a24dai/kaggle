@@ -13,24 +13,22 @@
 #     name: python3
 # ---
 
-# 各ライブラリのインポート
-# データ分析ライブラリ
-import pandas as pd
-import numpy as np
-import random as rnd
-# データ可視化ライブラリ
-import seaborn as sns
-import matplotlib.pyplot as plt
+# +
 # %matplotlib inline
-# 機械学習ライブラリ
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
+import random as rnd
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression, Perceptron, SGDClassifier
+from sklearn.model_selection import GridSearchCV
 from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import Perceptron
-from sklearn.linear_model import SGDClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
+# -
 
 # csvをデータフレームとして読み込み
 train_df = pd.read_csv('csv/train.csv')
@@ -343,6 +341,9 @@ combine = [train_df, test_df]
 train_df.describe()
 
 # testデータフレームも同様に確認
+# train_df = train_df.drop(['Title'], axis=1)
+# test_df = test_df.drop(['Title'], axis=1)
+# combine = [train_df, test_df]
 test_df.head(10)
 
 # --------------------
@@ -372,17 +373,20 @@ Y_train = train_df["Survived"]
 X_test  = test_df.drop("PassengerId", axis=1).copy()
 X_train.shape, Y_train.shape, X_test.shape
 
-# GridSearchをインポート
-from sklearn.model_selection import GridSearchCV
+# -----------
+#
+# 以下それぞれのモデルで推測結果を算出
+#
+# ----------
 
-# GridSearchを使用して交差検証
+# GridSearchを使用してRandom Forestを交差検証
 parameters = {
-    'n_estimators': [i for i in range(10, 100, 10)],
+    'n_estimators': [i for i in range(10, 20, 1)],
     'criterion': ['gini','entropy'],
     'max_depth': [i for i in range(1, 10, 1)],
     'min_samples_split': [2, 4, 10, 12, 16],
     'bootstrap': [True, False],
-    'random_state': 1,
+    'random_state': [1],
 }
 clf = GridSearchCV(RandomForestClassifier(), parameters, cv=5, n_jobs=-1, verbose=1)
 clf.fit(X_train, Y_train)
@@ -392,24 +396,84 @@ best_params = clf.best_params_
 print('best score: ', best_score, 'best params: ', best_params)
 
 # 交差検証のでテストデータを予測
-grid_pred = predictor.predict(X_test)
+random_pred = predictor.predict(X_test)
 
 # +
-# Random Forest
-# random_forest = RandomForestClassifier(n_estimators=100)
-# random_forest.fit(X_train, Y_train)
-# Y_pred = random_forest.predict(X_test)
-# random_forest.score(X_train, Y_train)
-# acc_random_forest = round(random_forest.score(X_train, Y_train) * 100, 2)
-# acc_random_forest
+# Decision Tree
+
+parameters = {
+    'splitter': ['best', 'random'],
+    'criterion': ['gini','entropy'],
+    'max_depth': [i for i in range(1, 10, 1)],
+    'min_samples_split': [2, 4, 10, 12, 16],
+    'random_state': [1],
+}
+dec_clf = GridSearchCV(DecisionTreeClassifier(), parameters, cv=5, n_jobs=-1, verbose=1)
+dec_clf.fit(X_train, Y_train)
+dec_predictor = dec_clf.best_estimator_
+best_score = dec_clf.best_score_
+best_params = dec_clf.best_params_
+decision_pred = dec_predictor.predict(X_test)
+print('best score: ', best_score, 'best params: ', best_params)
+
+# +
+# KNN
+
+parameters = {
+    'n_neighbors': [3, 5, 8, 11, 13, 16, 19, 21],
+    'weights': ['uniform','distance'],
+    'leaf_size':  list(range(1,50,5))
+}
+knn_clf = GridSearchCV(KNeighborsClassifier(), parameters, cv=5, n_jobs=-1, verbose=1)
+knn_clf.fit(X_train, Y_train)
+knn_predictor = knn_clf.best_estimator_
+best_score = knn_clf.best_score_
+best_params = knn_clf.best_params_
+decision_pred = knn_predictor.predict(X_test)
+print('best score: ', best_score, 'best params: ', best_params)
+
+# +
+# SVC
+
+svc = SVC()
+svc.fit(X_train, Y_train)
+svc_pred = svc.predict(X_test)
+acc_svc = round(svc.score(X_train, Y_train) * 100, 2)
+acc_svc
+
+# +
+# Logistic Regression
+
+logreg = LogisticRegression()
+logreg.fit(X_train, Y_train)
+log_pred = logreg.predict(X_test)
+acc_log = round(logreg.score(X_train, Y_train) * 100, 2)
+acc_log
+
+# +
+# Linear SVC
+
+linear_svc = LinearSVC()
+linear_svc.fit(X_train, Y_train)
+lin_pred = linear_svc.predict(X_test)
+acc_linear_svc = round(linear_svc.score(X_train, Y_train) * 100, 2)
+acc_linear_svc
 # -
+
+random_pred = random_pred.astype(int)
+random_pred
+
+# 手動でアンサンブル学習
+major = random_pred + decision_pred + knn_pred
+Y_pred = np.where(major >= 3, 1, 0)
+Y_pred
 
 # 提出用CSVデータ作成
 submission = pd.DataFrame({
         "PassengerId": test_df["PassengerId"],
-        "Survived": grid_pred
+        "Survived": random_pred
     })
-submission.to_csv('csv/submission11.csv', index=False)
+submission.to_csv('csv/submission21.csv', index=False)
 
 
 
